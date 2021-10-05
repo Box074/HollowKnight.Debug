@@ -1,0 +1,85 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using UnityEngine;
+
+namespace HKDebug.HitBox
+{
+    class HitBoxScript : MonoBehaviour
+    {
+        float t = 0;
+        Material m = null;
+        List<GameObject> lines = new List<GameObject>();
+        GameObject lg = null;
+        HitBoxColor hc = null;
+        void Awake() => UpdateColor();
+        public void UpdateColor()
+        {
+            if (lg == null)
+            {
+                lg = new GameObject("Hit Box");
+                lg.transform.parent = transform;
+            }
+            if (m == null)
+            {
+                m = new Material(Shader.Find("Diffuse"));
+            }
+            if (t < HitBoxCore.lastUpdate)
+            {
+                t = HitBoxCore.lastUpdate;
+            }
+            else
+            {
+                return;
+            }
+            
+            hc = HitBoxCore.hitBoxConfig.colors.FirstOrDefault(x => (int)x.layer == gameObject.layer);
+            if (hc == null)
+            {
+                lg?.SetActive(false);
+                m.color = new Color(0, 0, 0, 0);
+                return;
+            }
+            lg?.SetActive(true);
+            m.color = new Color(hc.r, hc.g, hc.b);
+        }
+        public void UpdateHitBox()
+        {
+            foreach (var v in lines) Destroy(v);
+            lines.Clear();
+            if (!HitBoxCore.enableHitBox)
+            {
+                lg?.SetActive(false);
+                return;
+            }
+            else
+            {
+                lg?.SetActive(true);
+            }
+            UpdateColor();
+            if (hc == null) return;
+
+            foreach(var v in gameObject.GetComponents<Collider2D>())
+            {
+                if(!hc.includeDisable)
+                {
+                    if (!v.enabled) continue;
+                }
+                GameObject go = new GameObject("Hit Box");
+                go.transform.parent = lg.transform;
+                LineRenderer lr = go.AddComponent<LineRenderer>();
+                lr.sharedMaterial = m;
+                lr.startWidth = 0.05f;
+                lr.endWidth = 0.05f;
+                lines.Add(go);
+                HitBoxCore.SetupLineRenderer(v, m, lr);
+            }
+        }
+        void FixedUpdate()
+        {
+            UpdateHitBox();
+        }
+    }
+}

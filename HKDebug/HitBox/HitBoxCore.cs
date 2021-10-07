@@ -13,36 +13,24 @@ namespace HKDebug.HitBox
     public class HitBoxCore
     {
 		public static float lastUpdate = 0;
-		public static bool autoFind = false;
 		public static HitBoxConfig hitBoxConfig = new HitBoxConfig();
 		public static bool enableHitBox = false;
 		public static void Init()
         {
+			HKDebugMod.OnConfigUpdate += LoadHitBoxConfig;
 			Menu.MenuManager.AddButton(new Menu.ButtonInfo()
 			{
-				label = "Refresh Hit Box",
-				submit = (_) => LoadHitBoxConfig()
-			});
-			Menu.MenuManager.AddButton(new Menu.ButtonInfo()
-			{
-				label = "Enable Hit Box",
+				label = "显示碰撞箱",
 				submit = (but) =>
                 {
 					enableHitBox = !enableHitBox;
-					but.label = (enableHitBox ? "Disable" : "Enable") + " Hit Box";
+					but.label = (!enableHitBox ? "显示" : "隐藏") + "碰撞箱";
                 }
 			});
-			Menu.MenuManager.AddButton(new Menu.ButtonInfo()
-			{
-				label = "Enable Auto Find Hit Box",
-				submit = (but) =>
-				{
-					autoFind = !autoFind;
-					but.label = (autoFind ? "Disable" : "Enable") + " Auto Find Hit Box";
-				}
-			});
+			LoadHitBoxConfig();
 		}
-		public static void RefreshHitBox()
+
+        public static void RefreshHitBox()
 		{
 			foreach (var v in UnityEngine.Object.FindObjectsOfType<Collider2D>())
 			{

@@ -11,6 +11,7 @@ namespace HKDebug.Menu
     {
         Texture2D bg = null;
         bool show = true;
+        Vector2 v = Vector2.zero;
         void OnGUI()
         {
             if (bg == null)
@@ -19,14 +20,31 @@ namespace HKDebug.Menu
                 bg.SetPixel(0, 0, new Color(0, 0, 0, 0.5f));
             }
             if (!MenuManager.HasButton || !show) return;
+            List<ButtonInfo> buttons = MenuManager.Buttons;
+            if (buttons == null)
+            {
+                MenuManager.LeaveGroup();
+                return;
+            }
+            if (buttons.Count == 0)
+            {
+                MenuManager.LeaveGroup();
+                return;
+            }
             GUI.DrawTexture(new Rect(20, 20, 256, 512), bg);
             GUILayout.BeginArea(new Rect(20, 20, 256, 512));
+            v = GUILayout.BeginScrollView(v);
             GUILayout.BeginVertical();
-            for(int i = 0; i < MenuManager.buttons.Count; i++)
+            if (MenuManager.groups.Count != 0)
             {
-                GUILayout.Label((MenuManager.select == i ? "->" : "  ") + MenuManager.buttons[i].label);
+                GUILayout.Label((MenuManager.select == -1 ? "->" : "  ") + "返回");
+            }
+            for (int i = 0; i < buttons.Count; i++)
+            {
+                GUILayout.Label((MenuManager.select == i ? "->" : "  ") + buttons[i].label);
             }
             GUILayout.EndVertical();
+            GUILayout.EndScrollView();
             GUILayout.EndArea();
 
         }

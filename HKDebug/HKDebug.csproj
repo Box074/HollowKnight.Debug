@@ -34,8 +34,26 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>..\..\..\ModdingApi63\Assembly-CSharp.dll</HintPath>
     </Reference>
+    <Reference Include="MMHOOK_Assembly-CSharp">
+      <HintPath>F:\SteamLibrary\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\MMHOOK_Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil, Version=0.11.3.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>F:\SteamLibrary\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\Mono.Cecil.dll</HintPath>
+    </Reference>
+    <Reference Include="MonoMod.RuntimeDetour">
+      <HintPath>F:\SteamLibrary\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\MonoMod.RuntimeDetour.dll</HintPath>
+    </Reference>
+    <Reference Include="MonoMod.Utils, Version=21.4.29.1, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>F:\SteamLibrary\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\MonoMod.Utils.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>F:\SteamLibrary\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="PlayMaker, Version=1.6.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>F:\SteamLibrary\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\PlayMaker.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -72,6 +90,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FakeDebug.cs" />
     <Compile Include="HitBox\HitBoxConfig.cs" />
     <Compile Include="HitBox\HitBoxCore.cs" />
     <Compile Include="HitBox\HitBoxScript.cs" />
@@ -79,6 +98,7 @@
     <Compile Include="Menu\MenuManager.cs" />
     <Compile Include="Menu\MenuShow.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Tool.cs" />
     <Compile Include="UnityExplorer.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

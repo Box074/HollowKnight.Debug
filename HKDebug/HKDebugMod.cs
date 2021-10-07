@@ -20,11 +20,17 @@ namespace HKDebug
             {
                 if (camera.GetComponent<MenuShow>() == null) camera.gameObject.AddComponent<MenuShow>();
             }
-            
+            if (HKDebugMod.ConfigUpdate)
+            {
+                HKDebugMod.ConfigUpdate = false;
+                HKDebugMod.TConfigUpdate();
+            }
+
         }
         void FixedUpdate()
         {
-            if (HitBox.HitBoxCore.autoFind)
+            
+            if (HitBox.HitBoxCore.enableHitBox)
             {
                 HitBox.HitBoxCore.RefreshHitBox();
             }
@@ -32,6 +38,7 @@ namespace HKDebug
     }
     public class HKDebugMod : Mod
     {
+        public static bool ConfigUpdate = false;
         public static string ConfigPath
         {
             get
@@ -41,55 +48,49 @@ namespace HKDebug
                 return p;
             }
         }
-
+        public static event Action OnConfigUpdate;
+        internal static void TConfigUpdate()
+        {
+            foreach(var v in OnConfigUpdate.GetInvocationList())
+            {
+                try
+                {
+                    v.DynamicInvoke();
+                }catch(Exception e)
+                {
+                    Modding.Logger.LogError(e);
+                }
+            }
+        }
+        FileSystemWatcher configWatcher = new FileSystemWatcher(ConfigPath, "*.json");
         public override void Initialize()
         {
             MenuManager.AddButton(new ButtonInfo()
             {
-                label = "Open Config",
+                label = "GitHub",
+                submit = (_) => Application.OpenURL("https://github.com/HKLab/HollowKnight.Debug")
+            });
+            MenuManager.AddButton(new ButtonInfo()
+            {
+                label = "打开配置文件夹",
                 submit = (_) => System.Diagnostics.Process.Start(ConfigPath)
             });
             UnityExplorer.Init();
-
+            Tool.Init();
             HitBox.HitBoxCore.Init();
+            FakeDebug.Init();
 
             var g = new GameObject("Debug");
             UnityEngine.Object.DontDestroyOnLoad(g);
             g.AddComponent<Script>();
 
-            MenuManager.AddButton(new ButtonInfo()
-            {
-                label = "Respawn",
-                submit = (_) => HeroController.instance.StartCoroutine(HeroController.instance.Respawn())
-            });
-            MenuManager.AddButton(new ButtonInfo()
-            {
-                label = "Accept Pause",
-                submit = (_) => PlayerData.instance.disablePause = false
-            });
-            MenuManager.AddButton(new ButtonInfo()
-            {
-                label = "End Boss Scene",
-                submit = (_) => BossSceneController.Instance.EndBossScene()
-            });
-            MenuManager.AddButton(new ButtonInfo()
-            {
-                label = "Accept Move",
-                submit = (_) =>
-                {
-                    HeroController.instance.hero_state = GlobalEnums.ActorStates.idle;
-                    HeroController.instance.AcceptInput();
-                }
-            });
-            MenuManager.AddButton(new ButtonInfo()
-            {
-                label = "Enable No Damage",
-                submit = (but) =>
-                {
-                    HeroController.instance.takeNoDamage = !HeroController.instance.takeNoDamage;
-                    but.label = (HeroController.instance.takeNoDamage ? "Disable" : "Enable") + " No Damage";
-                }
-            });
+            configWatcher.Changed += HKDebugMod_Changed;
+            
+        }
+
+        private void HKDebugMod_Changed(object sender, FileSystemEventArgs e)
+        {
+            ConfigUpdate = true;
         }
     }
 }

@@ -9,5 +9,5 @@ HolowKnight.Debug是一个帮助Mod开发者调试Mod的工具
 已实现功能：
 
 1. 显示碰撞箱
-2. 模拟`UnityEngine.Debug.DrawLine`
+2. 模拟`UnityEngine.Debug.DrawLine`和`UnityEngine.Debug.DrawRay`
 

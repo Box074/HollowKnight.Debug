@@ -123,7 +123,7 @@ namespace HKDebug
                     but.label = (!enable ? "启用" : "禁用") + "Debug.DrawLine";
                 }
             });
-            group.AddButton(new Menu.ButtonInfo()
+            /*group.AddButton(new Menu.ButtonInfo()
             {
                 label = "显示ChaseObjectV2",
                 submit = (but) =>
@@ -156,7 +156,7 @@ namespace HKDebug
             On.HutongGames.PlayMaker.Actions.ChaseObjectV2.DoChase += ChaseObjectV2_DoChase;
             On.HutongGames.PlayMaker.Actions.GetPosition2D.DoGetPosition += GetPosition2D_DoGetPosition;
             On.HutongGames.PlayMaker.Actions.GetPosition.DoGetPosition += GetPosition_DoGetPosition;
-            On.HutongGames.PlayMaker.Actions.GetAngleToTarget2D.DoGetAngle += GetAngleToTarget2D_DoGetAngle;
+            On.HutongGames.PlayMaker.Actions.GetAngleToTarget2D.DoGetAngle += GetAngleToTarget2D_DoGetAngle;*/
             HookEndpointManager.Add(typeof(Debug).GetMethod("DrawLine", new Type[]{
                 typeof(Vector3),
                 typeof(Vector3),

@@ -27,6 +27,11 @@ namespace HKDebug.HitBox
 					but.label = (!enableHitBox ? "显示" : "隐藏") + "碰撞箱";
                 }
 			});
+			Menu.MenuManager.AddButton(new Menu.ButtonInfo()
+			{
+				label = "刷新碰撞箱",
+				submit = (_) => LoadHitBoxConfig()
+			});
 			LoadHitBoxConfig();
 		}
 
@@ -39,7 +44,8 @@ namespace HKDebug.HitBox
 		}
 		public static void LoadHitBoxConfig()
         {
-			lastUpdate = Time.realtimeSinceStartup;
+			Modding.Logger.Log("Update Hit Box");
+			lastUpdate = Time.unscaledTime;
 			
 			string p = Path.Combine(HKDebugMod.ConfigPath, "HitBox.json");
             if (!File.Exists(p))
@@ -48,13 +54,6 @@ namespace HKDebug.HitBox
 				{
 					colors = new List<HitBoxColor>()
                     {
-						new HitBoxColor()
-                        {
-							layer = GlobalEnums.PhysLayers.HERO_DETECTOR,
-							r = 1,
-							g = 1,
-							b = 1
-                        },
 						new HitBoxColor()
                         {
 							layer = GlobalEnums.PhysLayers.PLAYER,
@@ -72,6 +71,17 @@ namespace HKDebug.HitBox
                         },
 						new HitBoxColor()
                         {
+							layer = GlobalEnums.PhysLayers.DEFAULT,
+							r = 0,
+							g = 1,
+							b = 0,
+							needPlayMakerFSMs = new List<string>()
+                            {
+								"damage_enemies"
+                            }
+                        },
+						new HitBoxColor()
+                        {
 							layer = GlobalEnums.PhysLayers.TERRAIN,
 							r = 1,
 							g = 1,
@@ -79,7 +89,11 @@ namespace HKDebug.HitBox
                         },
 						new HitBoxColor()
                         {
-							layer = GlobalEnums.PhysLayers.ENEMIES,
+							layer = GlobalEnums.PhysLayers.DEFAULT,
+							needComponents = new List<string>()
+                            {
+								typeof(DamageHero).FullName
+                            },
 							r = 1,
 							g = 0,
 							b = 0

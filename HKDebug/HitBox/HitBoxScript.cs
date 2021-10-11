@@ -15,6 +15,7 @@ namespace HKDebug.HitBox
         GameObject lg = null;
         HitBoxColor hc = null;
         void Awake() => UpdateColor();
+        void OnDestroy() => Destroy(lg);
         public void UpdateColor()
         {
             if (lg == null)
@@ -34,8 +35,16 @@ namespace HKDebug.HitBox
             {
                 return;
             }
-            
-            hc = HitBoxCore.hitBoxConfig.colors.FirstOrDefault(x => (int)x.layer == gameObject.layer);
+            string[] s = GetComponents<Component>().Select(x => x.GetType().FullName).ToArray();
+            string[] fsms = GetComponents<PlayMakerFSM>().Select(x => x.FsmName).ToArray();
+            hc = HitBoxCore.hitBoxConfig.colors.Where(
+                x => (int)x.layer == gameObject.layer || x.layer == GlobalEnums.PhysLayers.DEFAULT
+                ).Where(
+                x => x.layer != 0 || (x.layer == 0 && ((x.needComponents?.Count ?? 0) != 0 || (x.needPlayMakerFSMs?.Count ?? 0) != 0))
+                ).FirstOrDefault(
+                x => ((x.needComponents?.Count ?? 0) == 0 || x.needComponents.All(x2 => s.Contains(x2))) &&
+                    (x.needPlayMakerFSMs?.Count ?? 0) == 0 || x.needPlayMakerFSMs.All(x2 => fsms.Contains(x2))
+                );
             if (hc == null)
             {
                 lg?.SetActive(false);

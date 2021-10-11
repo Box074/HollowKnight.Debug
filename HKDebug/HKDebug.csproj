@@ -95,6 +95,9 @@
     <Compile Include="HitBox\HitBoxCore.cs" />
     <Compile Include="HitBox\HitBoxScript.cs" />
     <Compile Include="HKDebugMod.cs" />
+    <Compile Include="HotReload\HRComponent.cs" />
+    <Compile Include="HotReload\HRHook.cs" />
+    <Compile Include="HotReload\HRType.cs" />
     <Compile Include="Menu\MenuManager.cs" />
     <Compile Include="Menu\MenuShow.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

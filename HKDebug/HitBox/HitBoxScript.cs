@@ -40,10 +40,10 @@ namespace HKDebug.HitBox
             hc = HitBoxCore.hitBoxConfig.colors.Where(
                 x => (int)x.layer == gameObject.layer || x.layer == GlobalEnums.PhysLayers.DEFAULT
                 ).Where(
-                x => x.layer != 0 || (x.layer == 0 && ((x.needComponents?.Count ?? 0) != 0 || (x.needPlayMakerFSMs?.Count ?? 0) != 0))
+                x => x.layer != 0 || (x.layer == 0 && (x.needComponents.Count != 0 || x.needPlayMakerFSMs.Count != 0))
                 ).FirstOrDefault(
-                x => ((x.needComponents?.Count ?? 0) == 0 || x.needComponents.All(x2 => s.Contains(x2))) &&
-                    (x.needPlayMakerFSMs?.Count ?? 0) == 0 || x.needPlayMakerFSMs.All(x2 => fsms.Contains(x2))
+                x => (x.needComponents.Count == 0 || x.needComponents.All(x2 => s.Contains(x2))) &&
+                    (x.needPlayMakerFSMs.Count == 0 || x.needPlayMakerFSMs.All(x2 => fsms.Contains(x2)))
                 );
             if (hc == null)
             {
@@ -70,12 +70,9 @@ namespace HKDebug.HitBox
             UpdateColor();
             if (hc == null) return;
 
-            foreach(var v in gameObject.GetComponents<Collider2D>())
+            foreach (var v in gameObject.GetComponents<Collider2D>())
             {
-                if(!hc.includeDisable)
-                {
-                    if (!v.enabled) continue;
-                }
+                if (!v.enabled) continue;
                 GameObject go = new GameObject("Hit Box");
                 go.transform.parent = lg.transform;
                 LineRenderer lr = go.AddComponent<LineRenderer>();

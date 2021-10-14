@@ -83,7 +83,11 @@ namespace HKDebug
                 label = "Fade Out",
                 submit = (_) => PlayMakerFSM.BroadcastEvent("FADE OUT")
             });
-
+            group.AddButton(new ButtonInfo()
+            {
+                label = "增加33灵魂",
+                submit = (_) => HeroController.instance.AddMPCharge(33)
+            });
             On.HeroController.TakeDamage += HeroController_TakeDamage;
         }
         static bool canDamage = true;

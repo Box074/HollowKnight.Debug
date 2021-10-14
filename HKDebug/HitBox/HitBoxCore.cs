@@ -59,15 +59,13 @@ namespace HKDebug.HitBox
 							layer = GlobalEnums.PhysLayers.PLAYER,
 							r = 0,
 							g = 1,
-							b = 0
+							b = 0,
+							index = 0
                         },
 						new HitBoxColor()
                         {
 							layer = GlobalEnums.PhysLayers.HERO_ATTACK,
-							r = 0,
-							g = 1,
-							b = 0,
-							includeDisable = false
+							index=100
                         },
 						new HitBoxColor()
                         {
@@ -96,14 +94,29 @@ namespace HKDebug.HitBox
                             },
 							r = 1,
 							g = 0,
-							b = 0
-                        }
-                    }
+							b = 0,
+							index = -1
+                        },
+						new HitBoxColor()
+						{
+							layer = GlobalEnums.PhysLayers.DEFAULT,
+							needComponents = new List<string>()
+							{
+								typeof(HealthManager).FullName
+							},
+							r = 1,
+							g = 0.7f,
+							b = 0.7f,
+							index = 0
+						}
+					}
 				};
+				hitBoxConfig.colors = hitBoxConfig.colors.OrderBy(x => x.index).ToList();
 				File.WriteAllText(p, JsonConvert.SerializeObject(hitBoxConfig, Formatting.Indented));
 				return;
             }
 			hitBoxConfig = JsonConvert.DeserializeObject<HitBoxConfig>(File.ReadAllText(p));
+			hitBoxConfig.colors = hitBoxConfig.colors.OrderBy(x => x.index).ToList();
 			RefreshHitBox();
         }
 		public static LineRenderer SetupLineRenderer(Collider2D col,Material mat, LineRenderer line)

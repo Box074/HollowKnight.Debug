@@ -80,6 +80,7 @@ namespace HKDebug
             Tool.Init();
             HitBox.HitBoxCore.Init();
             FakeDebug.Init();
+            HotReload.HRLCore.Init();
 
             var g = new GameObject("Debug");
             UnityEngine.Object.DontDestroyOnLoad(g);

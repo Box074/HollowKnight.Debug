@@ -123,7 +123,8 @@ namespace HKDebug
                     but.label = (!enable ? "启用" : "禁用") + "Debug.DrawLine";
                 }
             });
-            /*group.AddButton(new Menu.ButtonInfo()
+#if DRAWLINE
+            group.AddButton(new Menu.ButtonInfo()
             {
                 label = "显示ChaseObjectV2",
                 submit = (but) =>
@@ -156,7 +157,8 @@ namespace HKDebug
             On.HutongGames.PlayMaker.Actions.ChaseObjectV2.DoChase += ChaseObjectV2_DoChase;
             On.HutongGames.PlayMaker.Actions.GetPosition2D.DoGetPosition += GetPosition2D_DoGetPosition;
             On.HutongGames.PlayMaker.Actions.GetPosition.DoGetPosition += GetPosition_DoGetPosition;
-            On.HutongGames.PlayMaker.Actions.GetAngleToTarget2D.DoGetAngle += GetAngleToTarget2D_DoGetAngle;*/
+            On.HutongGames.PlayMaker.Actions.GetAngleToTarget2D.DoGetAngle += GetAngleToTarget2D_DoGetAngle;
+#endif
             HookEndpointManager.Add(typeof(Debug).GetMethod("DrawLine", new Type[]{
                 typeof(Vector3),
                 typeof(Vector3),
@@ -179,7 +181,7 @@ namespace HKDebug
                     }
                     ));
         }
-
+#if DRAWLINE
         private static void ChaseObject_DoBuzz(On.HutongGames.PlayMaker.Actions.ChaseObject.orig_DoBuzz orig,
             HutongGames.PlayMaker.Actions.ChaseObject self)
         {
@@ -235,6 +237,7 @@ namespace HKDebug
             if(chaseShow) DrawLine(self.gameObject.GetSafe(self).transform.position, self.target.Value.transform.position,
                 Color.red, 0, true, true);
         }
+#endif
 
         public static void DrawLine(Vector3 start, Vector3 end,Color color, float duration = 0, bool depthTest = true, bool keepFixed = false)
         {

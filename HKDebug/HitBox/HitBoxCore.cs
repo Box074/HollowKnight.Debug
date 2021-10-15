@@ -17,7 +17,6 @@ namespace HKDebug.HitBox
 		public static bool enableHitBox = false;
 		public static void Init()
         {
-			HKDebugMod.OnConfigUpdate += LoadHitBoxConfig;
 			Menu.MenuManager.AddButton(new Menu.ButtonInfo()
 			{
 				label = "显示碰撞箱",

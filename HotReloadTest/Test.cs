@@ -30,7 +30,7 @@ namespace HotReloadTest
     {
         public void SayHello()
         {
-            Logger.Log("Hello,World!(Change)");
+            Logger.Log("Hello,World!(Change)5");
         }
     }
 }

@@ -124,7 +124,9 @@ namespace HKDebug.HotReload
 
             if (TypeCaches.TryGetValue(src.GetType(), out var type))
             {
+                //logger.Log("Create Instance: " + st.FullName);
                 o = System.Runtime.Serialization.FormatterServices.GetUninitializedObject(type);
+
                 Dictionary<string, object> data = new Dictionary<string, object>();
                 foreach (var f in st.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
                 {
@@ -147,6 +149,7 @@ namespace HKDebug.HotReload
                         }
                     }
                 }
+                //logger.Log("Save Cache");
                 ObjectCaches.AddCache(src, o);
                 if (TypeCaches.ContainsKey(type))
                 {
@@ -209,6 +212,12 @@ namespace HKDebug.HotReload
         public readonly static MethodInfo MBadMethod = typeof(HRLCore).GetMethod("HBadMethod");
         public static void CType(Type st, Type tt)
         {
+            if (st.GetCustomAttribute<System.Runtime.CompilerServices.CompilerGeneratedAttribute>() != null)
+            {
+                logger.Log("CompilerGeneratedAttribute: " + st.FullName);
+                return;
+            }
+            logger.Log("Load Type: " + st.FullName);
             TypeCaches.Add(st, tt);
             foreach (var v in st.GetMethods(BindingFlags.Public | BindingFlags.NonPublic |
                 BindingFlags.Instance | BindingFlags.Static |
@@ -218,6 +227,7 @@ namespace HKDebug.HotReload
                 HookEndpointManager.Modify(v, new Action<ILContext>(
                     (il) =>
                     {
+                        logger.Log("Modify Method IL");
                         MethodInfo m = tt.GetMethod(v.Name,
                             BindingFlags.Public | BindingFlags.NonPublic |
                             BindingFlags.Instance | BindingFlags.Static, Type.DefaultBinder,
@@ -280,28 +290,57 @@ namespace HKDebug.HotReload
             {
                 ass = Assembly.Load(File.ReadAllBytes(path));
             }
-
-            if (ass != null)
+            if (hrcaches.TryGetValue(path, out var old))
             {
-                Assembly old = AppDomain.CurrentDomain.GetAssemblies().Where(x => x != ass)
-                    .FirstOrDefault(x => x.GetName().Name == ass.GetName().Name);
+                hrcaches[path] = ass;
                 CAssembly(old, ass);
+            }
+            else
+            {
+                hrcaches[path] = ass;
+                HotLoadMod(ass, true);
             }
         }
         public static string PatchPath
         {
             get
             {
-                string p = Path.Combine(UnityEngine.Application.dataPath, "HKDebugHRLMods");
+                string p = Path.Combine(HKDebugMod.HKDebugPath, "HotReloadMods");
                 Directory.CreateDirectory(p);
                 return p;
             }
         }
         internal static Dictionary<string, DateTime> cacheTimes = new Dictionary<string, DateTime>();
+        public static Dictionary<string, Assembly> hrcaches = new Dictionary<string, Assembly>();
+        public static void HotLoadMod(Assembly ass,bool init = false)
+        {
+            foreach (var vt in ass.GetTypes().Where(x => x.IsSubclassOf(typeof(Modding.Mod)) && !x.IsAbstract))
+            {
+                try
+                {
+                    Modding.Mod m = (Modding.Mod)Activator.CreateInstance(vt);
+                    MHotReload.mods.Add(m);
+                    if (init)
+                    {
+                        m.Initialize(null);
+                    }
+                }
+                catch (Exception e)
+                {
+                    logger.LogError(e.ToString());
+                }
+            }
+        }
         public static void RefreshAssembly()
         {
-            foreach(var v in Directory.GetFiles(PatchPath, "*.dll"))
+            LoadConfig();
+            List<string> s = new List<string>();
+            s.AddRange(Directory.GetFiles(PatchPath, "*.dll"));
+            s.AddRange(Config.modsPath);
+            foreach(var v in s)
             {
+                logger.Log("Try load path: " + v);
+                if (!File.Exists(v)) continue;
                 DateTime wt = File.GetLastWriteTimeUtc(v);
                 if(cacheTimes.TryGetValue(v,out var v2))
                 {
@@ -323,6 +362,7 @@ namespace HKDebug.HotReload
         }
         public static void Init()
         {
+            LoadConfig();
             MenuManager.AddButton(new ButtonInfo()
             {
                 label = "HotReload",
@@ -334,7 +374,19 @@ namespace HKDebug.HotReload
                 submit = (_) => RefreshAssembly()
             });
         }
+        public static void LoadConfig()
+        {
+            string cp = Path.Combine(HKDebugMod.ConfigPath, "HotReload.json");
+            if (!File.Exists(cp))
+            {
+                Config = new HotReloadConfig();
+                File.WriteAllText(cp, Newtonsoft.Json.JsonConvert.SerializeObject(Config, Newtonsoft.Json.Formatting.Indented));
+                return;
+            }
+            Config = Newtonsoft.Json.JsonConvert.DeserializeObject<HotReloadConfig>(File.ReadAllText(cp));
+        }
         public static readonly ButtonGroup group = new ButtonGroup();
+        public static HotReloadConfig Config = new HotReloadConfig();
         public static Modding.SimpleLogger logger = new Modding.SimpleLogger("HKDebug.HotReload");
     }
 }

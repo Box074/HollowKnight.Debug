@@ -20,11 +20,6 @@ namespace HKDebug
             {
                 if (camera.GetComponent<MenuShow>() == null) camera.gameObject.AddComponent<MenuShow>();
             }
-            if (HKDebugMod.ConfigUpdate)
-            {
-                HKDebugMod.ConfigUpdate = false;
-                HKDebugMod.TConfigUpdate();
-            }
 
         }
         void FixedUpdate()
@@ -39,8 +34,16 @@ namespace HKDebug
     public class HKDebugMod : Mod
     {
         public override string GetVersion() => "1.0.0";
-        public static bool ConfigUpdate = false;
         public static string ConfigPath
+        {
+            get
+            {
+                string p = Path.Combine(HKDebugPath, "Config");
+                if (!Directory.Exists(p)) Directory.CreateDirectory(p);
+                return p;
+            }
+        }
+        public static string HKDebugPath
         {
             get
             {
@@ -49,23 +52,9 @@ namespace HKDebug
                 return p;
             }
         }
-        public static event Action OnConfigUpdate;
-        internal static void TConfigUpdate()
-        {
-            foreach(var v in OnConfigUpdate.GetInvocationList())
-            {
-                try
-                {
-                    v.DynamicInvoke();
-                }catch(Exception e)
-                {
-                    Modding.Logger.LogError(e);
-                }
-            }
-        }
-        FileSystemWatcher configWatcher = new FileSystemWatcher(ConfigPath, "*.json");
         public override void Initialize()
         {
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             MenuManager.AddButton(new ButtonInfo()
             {
                 label = "GitHub",
@@ -86,13 +75,12 @@ namespace HKDebug
             UnityEngine.Object.DontDestroyOnLoad(g);
             g.AddComponent<Script>();
 
-            configWatcher.Changed += HKDebugMod_Changed;
             
         }
 
-        private void HKDebugMod_Changed(object sender, FileSystemEventArgs e)
+        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            ConfigUpdate = true;
+            File.WriteAllText(Path.Combine(HKDebugPath, "error.log"), e.ExceptionObject.ToString());
         }
     }
 }

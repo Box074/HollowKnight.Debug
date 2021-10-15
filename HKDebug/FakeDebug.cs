@@ -60,7 +60,6 @@ namespace HKDebug
                     data.to
                     });
             }
-            bool w = false;
             void FixedUpdate()
             {
                 if (data != null)

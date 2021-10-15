@@ -15,10 +15,15 @@ namespace HKDebug.HotReload
         public MHotReload() : base("HotReload")
         {
             Log("Try to load mods");
-            foreach (var v in Directory.GetFiles(HRLCore.PatchPath).Where(x=>Path.GetExtension(x) == ".dll"))
+            HRLCore.LoadConfig();
+            List<string> s = new List<string>();
+            s.AddRange(Directory.GetFiles(HRLCore.PatchPath, "*.dll"));
+            s.AddRange(HRLCore.Config.modsPath);
+            foreach (var v in s)
             {
                 try
                 {
+                    if (!File.Exists(v)) continue;
                     Log("Load mod: " + v);
                     HRLCore.cacheTimes[v] = File.GetLastWriteTimeUtc(v);
                     string pdb = Path.Combine(Path.GetDirectoryName(v), Path.GetFileNameWithoutExtension(v) + ".pdb");
@@ -31,25 +36,13 @@ namespace HKDebug.HotReload
                     {
                         ass = Assembly.Load(File.ReadAllBytes(v));
                     }
-                    foreach (var vt in ass.GetTypes().Where(x => x.IsSubclassOf(typeof(Mod)) && !x.IsAbstract))
-                    {
-                        Log("Find type: " + vt.FullName);
-                        try
-                        {
-                            Mod m = (Mod)Activator.CreateInstance(vt);
-                            Log("mod: " + m.GetName());
-                            mods.Add(m);
-                        }
-                        catch (Exception e)
-                        {
-                            LogError(e.ToString());
-                        }
-                    }
+                    HRLCore.hrcaches[v] = ass;
+                    HRLCore.HotLoadMod(ass, false);
 
                 }
                 catch (Exception e)
                 {
-                   LogError(e.ToString());
+                    LogError(e.ToString());
                 }
             }
         }

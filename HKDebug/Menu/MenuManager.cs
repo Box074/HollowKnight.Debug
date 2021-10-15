@@ -52,7 +52,13 @@ namespace HKDebug.Menu
                 return;
             }
             var but = Buttons[select];
-            but.submit?.Invoke(but);
+            try
+            {
+                but.submit?.Invoke(but);
+            }catch(Exception e)
+            {
+                Modding.Logger.LogError(e);
+            }
         }
     }
 }

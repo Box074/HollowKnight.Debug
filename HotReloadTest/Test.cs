@@ -24,13 +24,13 @@ namespace HotReloadTest
             t.SayHello();
         }
 
-        public TestMod2 t = new TestMod2();
+        public TestMod3 t = new TestMod3();
     }
-    public class TestMod2
+    public class TestMod3
     {
         public void SayHello()
         {
-            Logger.Log("Hello,World!(Change)5");
+            Logger.Log("Hello,World!(Change)5A111111111111");
         }
     }
 }

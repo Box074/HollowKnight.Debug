@@ -54,6 +54,7 @@ namespace HKDebug
         }
         public override void Initialize()
         {
+            Logo.Init();
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             MenuManager.AddButton(new ButtonInfo()
             {

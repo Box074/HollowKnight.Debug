@@ -33,11 +33,11 @@ namespace HKDebug.HotReload
         }
         public override bool Equals(object obj)
         {
-            if (Object == null || Object.IsAlive) return false;
+            if (Object == null || !Object.IsAlive) return false;
             if (obj == null) return false;
             if(obj is ObjectHandler handler)
             {
-                if (handler.Object.IsAlive) return false;
+                if (!handler.Object.IsAlive) return false;
                 if (ReferenceEquals(handler.Object.Target, Object.Target))
                 {
                     return true;
@@ -69,21 +69,23 @@ namespace HKDebug.HotReload
         {
             if (src == null) return null;
             Type t = src.GetType();
-            LinkedList<(ObjectHandler, object)> table;
-            if (!caches.TryGetValue(t,out table))
+            if (!caches.TryGetValue(t,out var table))
             {
                 table = new LinkedList<(ObjectHandler, object)>();
                 caches.Add(t, table);
             }
-            return table.FirstOrDefault(x => x.Item1.Equals(src));
+            return table.FirstOrDefault(x => x.Item1.Equals(src)).Item2;
         }
         public void AddCache(object src,object dst)
         {
             if (src == null || dst == null) return;
-            if(caches.TryGetValue(src.GetType(),out var v))
+
+            if(!caches.TryGetValue(src.GetType(),out var table))
             {
-                v.AddFirst((new ObjectHandler(src), dst));
+                table = new LinkedList<(ObjectHandler, object)>();
+                caches.Add(src.GetType(), table);
             }
+            table.AddFirst((new ObjectHandler(src), dst));
         }
         public void Clean()
         {
@@ -117,20 +119,30 @@ namespace HKDebug.HotReload
         }
         public static object ConvertObject(object src)
         {
+            //return null;//TODO
+            //logger.Log("Convert Object: " + src?.ToString());
             if (src == null) return null;
             Type st = src.GetType();
             var o = ObjectCaches.TryGetCache(src);
-            if (o != null) return o;
 
-            if (TypeCaches.TryGetValue(src.GetType(), out var type))
+            //return null;
+            if (o != null)
             {
+                //logger.Log("Use Cache: " + o?.ToString());
+                return o;
+            }
+
+            if (TypeCaches.TryGetValue(st, out var type))
+            {
+                //logger.Log("T/F:" + (st == type).ToString());
                 //logger.Log("Create Instance: " + st.FullName);
+                //return null;
                 o = System.Runtime.Serialization.FormatterServices.GetUninitializedObject(type);
 
                 Dictionary<string, object> data = new Dictionary<string, object>();
                 foreach (var f in st.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
                 {
-                    data.Add(f.Name, f.GetValue(src));
+                    data.Add(f.Name, ConvertObject(f.GetValue(src)));
                 }
                 foreach (var f in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
                 {
@@ -179,6 +191,7 @@ namespace HKDebug.HotReload
             }
             else
             {
+                logger.Log("Not Catch");
                 return src;
             }
 
@@ -187,6 +200,7 @@ namespace HKDebug.HotReload
         public static void ToMethod(ILContext iL, MethodBase target)
         {
             ILCursor cur = new ILCursor(iL);
+            logger.Log("Method: " + target.Name);
             if (!target.IsStatic)
             {
                 cur.Emit(OpCodes.Ldarg_0);
@@ -195,8 +209,11 @@ namespace HKDebug.HotReload
             ParameterInfo[] ps = target.GetParameters();
             for (int i = 0; i < ps.Length; i++)
             {
-                cur.Emit(OpCodes.Ldarg, i + (!target.IsStatic ? 1 : 0));
+                
+                logger.Log("Push arg[" + i + "]: " + ps[i].Name);
+                cur.Emit(OpCodes.Ldarg, i + (target.IsStatic ? 0 : 1));
             }
+            //cur.Emit(OpCodes.Call, MBadMethod);
             if (target.IsStatic)
             {
                 cur.Emit(OpCodes.Call, target);
@@ -212,6 +229,11 @@ namespace HKDebug.HotReload
         public readonly static MethodInfo MBadMethod = typeof(HRLCore).GetMethod("HBadMethod");
         public static void CType(Type st, Type tt)
         {
+            if (st == tt)
+            {
+                logger.LogError("Bad Type");
+                return;
+            }
             if (st.GetCustomAttribute<System.Runtime.CompilerServices.CompilerGeneratedAttribute>() != null)
             {
                 logger.Log("CompilerGeneratedAttribute: " + st.FullName);
@@ -278,17 +300,37 @@ namespace HKDebug.HotReload
 
 
         }
+        static int hrcount = 0;
         public static void LoadAssembly(string path)
         {
+            if (!File.Exists(path)) return;
+            byte[] b = File.ReadAllBytes(path);
+            MemoryStream stream = new MemoryStream(b, true);
+            using (AssemblyDefinition assd = AssemblyDefinition.ReadAssembly(stream))
+            {
+                
+                assd.Name.Name = assd.Name.Name + ".HotReload" + hrcount;
+                hrcount++;
+                assd.MainModule.Mvid = Guid.NewGuid();
+                CustomAttribute gattr = assd.CustomAttributes.FirstOrDefault(
+                    x => x.AttributeType.FullName == "System.Runtime.InteropServices.GuidAttribute");
+                if (gattr != null)
+                {
+                    assd.CustomAttributes.Remove(gattr);
+                }
+                assd.Write(stream);
+            }
+            b = stream.ToArray();
+
             string pdb = Path.Combine(Path.GetDirectoryName(path), Path.GetFileNameWithoutExtension(path) + ".pdb");
             Assembly ass;
             if (File.Exists(pdb))
             {
-                ass = Assembly.Load(File.ReadAllBytes(path), File.ReadAllBytes(pdb));
+                ass = Assembly.Load(b, File.ReadAllBytes(pdb));
             }
             else
             {
-                ass = Assembly.Load(File.ReadAllBytes(path));
+                ass = Assembly.Load(b);
             }
             if (hrcaches.TryGetValue(path, out var old))
             {
@@ -346,7 +388,7 @@ namespace HKDebug.HotReload
                 {
                     if (v2 >= wt)
                     {
-                        continue;
+                        //continue;
                     }
                 }
                 cacheTimes[v] = wt;
@@ -374,17 +416,7 @@ namespace HKDebug.HotReload
                 submit = (_) => RefreshAssembly()
             });
         }
-        public static void LoadConfig()
-        {
-            string cp = Path.Combine(HKDebugMod.ConfigPath, "HotReload.json");
-            if (!File.Exists(cp))
-            {
-                Config = new HotReloadConfig();
-                File.WriteAllText(cp, Newtonsoft.Json.JsonConvert.SerializeObject(Config, Newtonsoft.Json.Formatting.Indented));
-                return;
-            }
-            Config = Newtonsoft.Json.JsonConvert.DeserializeObject<HotReloadConfig>(File.ReadAllText(cp));
-        }
+        public static void LoadConfig() => Config = HKDebug.Config.LoadConfig("HotReload", () => new HotReloadConfig());
         public static readonly ButtonGroup group = new ButtonGroup();
         public static HotReloadConfig Config = new HotReloadConfig();
         public static Modding.SimpleLogger logger = new Modding.SimpleLogger("HKDebug.HotReload");

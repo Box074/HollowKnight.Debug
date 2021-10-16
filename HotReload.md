@@ -23,7 +23,7 @@ HotReload
 
 将要热重载的mod复制到`游戏目录\hollow_knight_Data\HKDebug\HotReloadMods`文件夹下或在配置文件中添加要热重载的mod的路径
 
-启动游戏后会自动加载，在游戏中使用`HotReload->刷新`来热重载
+启动游戏后会自动加载，在游戏中使用`HotReload->刷新`来进行热重载
 
 ---
 
@@ -37,3 +37,4 @@ HotReload
 4. 所有被热重载器加载的mod不可以依赖于其他被热重载器加载的mod
 5. 所有Component在每次热重载时会被重新添加到GameObject，并销毁原Component
 6. 请尽量不要更改方法签名
+

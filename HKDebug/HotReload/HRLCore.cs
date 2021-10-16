@@ -450,15 +450,18 @@ namespace HKDebug.HotReload
                     {
                         m.Initialize(null);
                     }
-                    object mi = Activator.CreateInstance(ModInstance);
-                    Modding.ReflectionHelper.SetField(mi, "Mod", m);
-                    Modding.ReflectionHelper.SetField(mi, "Enable", true);
-                    Modding.ReflectionHelper.SetField(mi, "Name", m.GetName());
-                    ModLoaderAddModInstance.Invoke(null, new object[]
+                    if (ModInstance != null)
                     {
+                        object mi = Activator.CreateInstance(ModInstance);
+                        ModInstance.GetField("Mod").SetValue(mi, m);
+                        ModInstance.GetField("Enable").SetValue(mi, true);
+                        ModInstance.GetField("Name").SetValue(mi, m.GetName());
+                        ModLoaderAddModInstance.Invoke(null, new object[]
+                        {
                         vt, mi
-                    });
-                    ModLoaderUpdateModText.Invoke(null, null);
+                        });
+                        ModLoaderUpdateModText.Invoke(null, null);
+                    }
                 }
                 catch (Exception e)
                 {

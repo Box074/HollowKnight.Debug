@@ -33,7 +33,7 @@ namespace HKDebug
     }
     public class HKDebugMod : Mod
     {
-        public override string GetVersion() => "1.0.0";
+        public override string GetVersion() => "1.0.2";
         public static string ConfigPath
         {
             get

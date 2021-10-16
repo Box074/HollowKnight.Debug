@@ -48,6 +48,7 @@ namespace HKDebug.HotReload
         }
         public override void Initialize()
         {
+            
             foreach(var v in mods)
             {
                 Log("Initialize mod: " + v);

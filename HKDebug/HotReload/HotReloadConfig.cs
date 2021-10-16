@@ -9,5 +9,6 @@ namespace HKDebug.HotReload
     public class HotReloadConfig
     {
         public List<string> modsPath = new List<string>();
+        public bool ingoreLastWriteTime = false;
     }
 }

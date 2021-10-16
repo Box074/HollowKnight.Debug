@@ -122,7 +122,7 @@ namespace HKDebug
                     but.label = (!enable ? "启用" : "禁用") + "Debug.DrawLine";
                 }
             });
-#if DRAWLINE
+#if DEBUG
             group.AddButton(new Menu.ButtonInfo()
             {
                 label = "显示ChaseObjectV2",
@@ -180,7 +180,7 @@ namespace HKDebug
                     }
                     ));
         }
-#if DRAWLINE
+#if DEBUG
         private static void ChaseObject_DoBuzz(On.HutongGames.PlayMaker.Actions.ChaseObject.orig_DoBuzz orig,
             HutongGames.PlayMaker.Actions.ChaseObject self)
         {

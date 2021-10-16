@@ -12,6 +12,7 @@ using MonoMod.Utils;
 using MonoMod.Cil;
 using Mono.Cecil.Cil;
 using Mono.Cecil;
+using Modding;
 
 namespace HKDebug.HotReload
 {
@@ -111,7 +112,17 @@ namespace HKDebug.HotReload
     }
     public static class HRLCore
     {
+        private static readonly Type ModLoaderType = typeof(IMod).Assembly.GetType("Modding.ModLoader");
+
+        private static readonly MethodInfo ModLoaderAddModInstance =
+            ModLoaderType.GetMethod("AddModInstance", BindingFlags.Static | BindingFlags.NonPublic);
+        private static readonly MethodInfo ModLoaderUpdateModText =
+            ModLoaderType.GetMethod("UpdateModText", BindingFlags.Static | BindingFlags.NonPublic);
+        private static readonly Type ModInstance = ModLoaderType.GetNestedType("ModInstance");
+
+
         public readonly static Dictionary<Type, Type> TypeCaches = new Dictionary<Type, Type>();
+        public readonly static LinkedList<Type> NeedInitStatic = new LinkedList<Type>();
         public readonly static HRObjectCache ObjectCaches = new HRObjectCache();
         public static void CleanObjectCache()
         {
@@ -123,6 +134,7 @@ namespace HKDebug.HotReload
             //logger.Log("Convert Object: " + src?.ToString());
             if (src == null) return null;
             Type st = src.GetType();
+
             var o = ObjectCaches.TryGetCache(src);
 
             //return null;
@@ -132,17 +144,22 @@ namespace HKDebug.HotReload
                 return o;
             }
 
+
             if (TypeCaches.TryGetValue(st, out var type))
             {
                 //logger.Log("T/F:" + (st == type).ToString());
                 //logger.Log("Create Instance: " + st.FullName);
                 //return null;
+                if (st.IsSubclassOf(typeof(UnityEngine.Component)))
+                {
+                    return ComponentHelper.ConvertComponent((UnityEngine.Component)src, type);
+                }
                 o = System.Runtime.Serialization.FormatterServices.GetUninitializedObject(type);
 
                 Dictionary<string, object> data = new Dictionary<string, object>();
                 foreach (var f in st.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
                 {
-                    data.Add(f.Name, ConvertObject(f.GetValue(src)));
+                    data[f.Name] = ConvertObject(f.GetValue(src));
                 }
                 foreach (var f in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
                 {
@@ -191,7 +208,7 @@ namespace HKDebug.HotReload
             }
             else
             {
-                logger.Log("Not Catch");
+                //logger.Log("Not Catch");
                 return src;
             }
 
@@ -210,7 +227,7 @@ namespace HKDebug.HotReload
             for (int i = 0; i < ps.Length; i++)
             {
                 
-                logger.Log("Push arg[" + i + "]: " + ps[i].Name);
+                //logger.Log("Push arg[" + i + "]: " + ps[i].Name);
                 cur.Emit(OpCodes.Ldarg, i + (target.IsStatic ? 0 : 1));
             }
             //cur.Emit(OpCodes.Call, MBadMethod);
@@ -224,6 +241,14 @@ namespace HKDebug.HotReload
             }
             cur.Emit(OpCodes.Ret);
         }
+        public static Type TryGetType(Type o)
+        {
+            if(TypeCaches.TryGetValue(o,out var v))
+            {
+                return v;
+            }
+            return o;
+        }
         [Obsolete]
         public static void HBadMethod() => throw new HRBadMethod();
         public readonly static MethodInfo MBadMethod = typeof(HRLCore).GetMethod("HBadMethod");
@@ -234,13 +259,18 @@ namespace HKDebug.HotReload
                 logger.LogError("Bad Type");
                 return;
             }
-            if (st.GetCustomAttribute<System.Runtime.CompilerServices.CompilerGeneratedAttribute>() != null)
+            if(st.IsGenericType || tt.IsGenericType)
             {
-                logger.Log("CompilerGeneratedAttribute: " + st.FullName);
-                return;
+                logger.LogError("无法处理泛型类型: " + st.FullName);
             }
+            /*if (st.GetCustomAttribute<System.Runtime.CompilerServices.CompilerGeneratedAttribute>() != null)
+            {
+                //logger.Log("CompilerGeneratedAttribute: " + st.FullName);
+                return;
+            }*/
             logger.Log("Load Type: " + st.FullName);
-            TypeCaches.Add(st, tt);
+            TypeCaches[st] = tt;
+            
             foreach (var v in st.GetMethods(BindingFlags.Public | BindingFlags.NonPublic |
                 BindingFlags.Instance | BindingFlags.Static |
                 BindingFlags.DeclaredOnly
@@ -249,11 +279,10 @@ namespace HKDebug.HotReload
                 HookEndpointManager.Modify(v, new Action<ILContext>(
                     (il) =>
                     {
-                        logger.Log("Modify Method IL");
                         MethodInfo m = tt.GetMethod(v.Name,
                             BindingFlags.Public | BindingFlags.NonPublic |
                             BindingFlags.Instance | BindingFlags.Static, Type.DefaultBinder,
-                            v.GetParameters().Select(x => x.ParameterType).ToArray(),
+                            v.GetParameters().Select(x => TryGetType(x.ParameterType)).ToArray(),
                             null);
                         if (m == null)
                         {
@@ -267,11 +296,63 @@ namespace HKDebug.HotReload
                         }
                     }));
             }
+
+            
+        }
+        public static Type[] GetTypesForAssembly(Assembly ass)
+        {
+            List<Type> types = new List<Type>();
+            void FindInType(Type p,List<Type> list)
+            {
+                foreach(var v in p.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic
+                    | BindingFlags.Static | BindingFlags.Instance))
+                {
+                    list.Add(v);
+                    FindInType(v, list);
+                }
+            }
+            foreach(var v in ass.GetTypes())
+            {
+                types.Add(v);
+                //FindInType(v, types);
+            }
+            return types.ToArray();
+        }
+        public static void InitStatic(Type s,Type d)
+        {
+            if (s == null || d == null) return;
+            if (s.IsGenericType || d.IsGenericType)
+            {
+                return;
+            }
+            Dictionary<string, object> data = new Dictionary<string, object>();
+            foreach (var f in s.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+            {
+                data[f.Name] = ConvertObject(f.GetValue(null));
+            }
+            foreach (var f in d.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+            {
+                if (data.TryGetValue(f.Name, out var val))
+                {
+                    if (f.FieldType.IsValueType && val == null) continue;
+                    if (val == null)
+                    {
+                        f.SetValue(null, null);
+                        continue;
+                    }
+                    if (f.FieldType.IsAssignableFrom(val.GetType()))
+                    {
+                        f.SetValue(null, val);
+                        continue;
+                    }
+                }
+            }
         }
         public static void CAssembly(Assembly src, Assembly dst)
         {
-            Type[] dts = dst.GetTypes();
-            foreach (var v in src.GetTypes()
+            List<(Type,Type)> ns = new List<(Type, Type)>();
+            Type[] dts = GetTypesForAssembly(dst);
+            foreach (var v in GetTypesForAssembly(src)
                 .Where(
                 x => dts
                 .Any(
@@ -291,14 +372,24 @@ namespace HKDebug.HotReload
             {
                 try
                 {
+                    if (v.Item2.IsSubclassOf(typeof(Delegate))) continue;
+                    ns.Add(v);
                     CType(v.x, v.Item2);
                 } catch (Exception e)
                 {
                     Modding.Logger.LogError(e.ToString());
                 }
+                foreach(var v2 in ns)
+                {
+                    try
+                    {
+                        InitStatic(v2.Item1, v2.Item2);
+                    }catch(Exception e)
+                    {
+                        logger.LogError(e);
+                    }
+                }
             }
-
-
         }
         static int hrcount = 0;
         public static void LoadAssembly(string path)
@@ -311,13 +402,6 @@ namespace HKDebug.HotReload
                 
                 assd.Name.Name = assd.Name.Name + ".HotReload" + hrcount;
                 hrcount++;
-                assd.MainModule.Mvid = Guid.NewGuid();
-                CustomAttribute gattr = assd.CustomAttributes.FirstOrDefault(
-                    x => x.AttributeType.FullName == "System.Runtime.InteropServices.GuidAttribute");
-                if (gattr != null)
-                {
-                    assd.CustomAttributes.Remove(gattr);
-                }
                 assd.Write(stream);
             }
             b = stream.ToArray();
@@ -356,16 +440,25 @@ namespace HKDebug.HotReload
         public static Dictionary<string, Assembly> hrcaches = new Dictionary<string, Assembly>();
         public static void HotLoadMod(Assembly ass,bool init = false)
         {
-            foreach (var vt in ass.GetTypes().Where(x => x.IsSubclassOf(typeof(Modding.Mod)) && !x.IsAbstract))
+            foreach (var vt in ass.GetTypes().Where(x => x.IsSubclassOf(typeof(Mod)) && !x.IsAbstract))
             {
                 try
                 {
-                    Modding.Mod m = (Modding.Mod)Activator.CreateInstance(vt);
+                    Mod m = (Mod)Activator.CreateInstance(vt);
                     MHotReload.mods.Add(m);
                     if (init)
                     {
                         m.Initialize(null);
                     }
+                    object mi = Activator.CreateInstance(ModInstance);
+                    Modding.ReflectionHelper.SetField(mi, "Mod", m);
+                    Modding.ReflectionHelper.SetField(mi, "Enable", true);
+                    Modding.ReflectionHelper.SetField(mi, "Name", m.GetName());
+                    ModLoaderAddModInstance.Invoke(null, new object[]
+                    {
+                        vt, mi
+                    });
+                    ModLoaderUpdateModText.Invoke(null, null);
                 }
                 catch (Exception e)
                 {
@@ -386,9 +479,9 @@ namespace HKDebug.HotReload
                 DateTime wt = File.GetLastWriteTimeUtc(v);
                 if(cacheTimes.TryGetValue(v,out var v2))
                 {
-                    if (v2 >= wt)
+                    if (v2 >= wt && !Config.ingoreLastWriteTime)
                     {
-                        //continue;
+                        continue;
                     }
                 }
                 cacheTimes[v] = wt;

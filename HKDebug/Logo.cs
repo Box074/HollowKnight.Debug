@@ -36,7 +36,7 @@ namespace HKDebug
                     logoC = UnityEngine.Object.Instantiate(dlc, dlc.transform.parent);
                     logoC.SetActive(true);
                     var pos = dlc.transform.position;
-                    logoC.transform.position = pos - new Vector3(2.5f,0.1f);
+                    logoC.transform.position = pos - new Vector3(1.4f,0.1f);
                     logoC.transform.localScale *= 0.1f;
                     logoC.GetComponent<SpriteRenderer>().sprite = Sprite.Create(logo,
                         new Rect(0, 0, logo.width, logo.height), Vector2.one * 0.5f);

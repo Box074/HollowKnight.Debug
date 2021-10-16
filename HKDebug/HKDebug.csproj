@@ -18,7 +18,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;DRAWLINE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -104,6 +104,7 @@
     <Compile Include="HitBox\HitBoxCore.cs" />
     <Compile Include="HitBox\HitBoxScript.cs" />
     <Compile Include="HKDebugMod.cs" />
+    <Compile Include="HotReload\ComponentHelper.cs" />
     <Compile Include="HotReload\HotReload.cs" />
     <Compile Include="HotReload\HotReloadConfig.cs" />
     <Compile Include="HotReload\HRBadMethod.cs" />
